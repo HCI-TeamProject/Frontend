@@ -9,3 +9,12 @@
 /* Keep activity details readable at both desktop and compact widths. */
 .record-meta{font-size:11px;color:#798571}.record-title>strong{font-size:13px}.status{font-size:10px}.person-row strong{font-size:12px}.person-row>div>span{font-size:11px;color:#7e8d74}.section-heading p{font-size:11px;color:#7f8e75}.metric p{font-size:10px;color:#87967c}.hero p{font-size:12px;color:#758669}.page-heading p{color:#7d8c74}.record-roles>span{color:#6d815e}.field-help{color:#7d8e70}.small-note{color:#839175}
 @media(max-width:720px){.record-meta{font-size:10px}.person-row>div>span{font-size:9px}.person-row strong{font-size:11px}.hero p{font-size:11px}.metric p{font-size:9px}.status{font-size:9px}}
+/* Auth validation: error text takes over the field's bottom margin, so nothing below it moves when it appears. */
+:root{--error:#c8402f}
+.auth-box form>label{margin-bottom:26px}
+.auth-box form>label:has(+.field-error){margin-bottom:4px}
+.auth-box label.invalid input{border-color:var(--error);box-shadow:0 0 0 3px #c8402f1a}
+.auth-box label.invalid input:focus{box-shadow:0 0 0 3px #c8402f33}
+.field-error{display:flex;align-items:center;gap:5px;margin-bottom:8px;font-size:11px;line-height:14px;font-weight:500;color:var(--error)}
+.field-error>svg{flex-shrink:0}
+.auth-box .form-error{margin:0 0 14px;color:var(--error)}

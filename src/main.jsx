@@ -18,7 +18,9 @@ async function api(path, {method='GET', body, binary=false}={}) {
   if (!response.ok) {
     const data = await response.json().catch(()=>({message:'서버에 연결할 수 없습니다.'}));
     if (response.status===401 && !path.startsWith('/auth/')) { token='';localStorage.removeItem('moa.token');window.dispatchEvent(new Event('moa-expired')); }
-    throw new Error([data.message,...(data.errors||[]).map(e=>`${e.field}: ${e.reason}`)].filter(Boolean).join(' · '));
+    const error = new Error([data.message,...(data.errors||[]).map(e=>`${e.field}: ${e.reason}`)].filter(Boolean).join(' · '));
+    error.code = data.code;
+    throw error;
   }
   if (response.status===204) return null;
   return binary ? response.blob() : response.json();
@@ -35,12 +37,48 @@ function Modal({title,subtitle,onClose,children,wide=false}){
 }
 function Submit({busy,children='저장하기'}){return <button className="button primary" type="submit" disabled={busy}>{busy?<LoaderCircle className="spin" size={17}/>:<Check size={17}/>} {busy?'처리 중…':children}</button>}
 
+// Login is looser than signup: the server accepts domains without a dot (a@b), and those accounts must still be able to sign in.
+const EMAIL_LOGIN=/^[^\s@]+@[^\s@]+$/,EMAIL_SIGNUP=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+function authErrors({name,email,password},signup){
+  const errors={};
+  if(signup&&!name.trim())errors.name='이름을 입력해주세요.';
+  if(!email.trim())errors.email='이메일을 입력해주세요.';
+  else if(!email.includes('@'))errors.email='이메일에 @가 빠졌어요. 예: name@example.com';
+  else if(!(signup?EMAIL_SIGNUP:EMAIL_LOGIN).test(email.trim()))errors.email='이메일 형식을 확인해주세요. 예: name@example.com';
+  if(!password.trim())errors.password='비밀번호를 입력해주세요.';
+  else if(signup&&password.length<8)errors.password=`비밀번호는 8자 이상이어야 해요. (지금 ${password.length}자)`;
+  return errors;
+}
+function AuthField({label,error,invalid,...input}){
+  const errorId=`auth-${input.name}-error`;
+  return <><label className={invalid?'invalid':undefined}>{label}<input {...input} aria-invalid={invalid||undefined} aria-describedby={error?errorId:undefined}/></label>{error&&<span className="field-error" id={errorId}><AlertCircle size={13} aria-hidden="true"/>{error}</span>}</>
+}
+
 function Auth({onLogin,notify}){
-  const [signup,setSignup]=useState(false),[busy,setBusy]=useState(false);
+  const [signup,setSignup]=useState(false),[busy,setBusy]=useState(false),[values,setValues]=useState({name:'',email:'',password:''}),[touched,setTouched]=useState({}),[serverError,setServerError]=useState(null);
+  const errors=authErrors(values,signup);
+  function change(e){const {name,value}=e.target;setValues(v=>({...v,[name]:value}));setServerError(null)}
+  // An empty field stays quiet on blur so passing through it doesn't read as a mistake; submit still flags it.
+  function blur(e){const {name,value}=e.target;if(value)setTouched(t=>({...t,[name]:true}))}
+  function field(name){const error=touched[name]?errors[name]:undefined;return {name,value:values[name],error,invalid:!!error||!!serverError?.fields.includes(name),onChange:change,onBlur:blur}}
+  function switchMode(){setSignup(!signup);setTouched({});setServerError(null)}
   async function login(email,password){const result=await api('/auth/login',{method:'POST',body:{email,password}});token=result.accessToken;localStorage.setItem('moa.token',token);onLogin()}
-  async function submit(e){e.preventDefault();const values=Object.fromEntries(new FormData(e.currentTarget));setBusy(true);try{if(signup)await api('/auth/signup',{method:'POST',body:values});await login(values.email,values.password)}catch(e){notify(e.message,true)}finally{setBusy(false)}}
+  async function submit(e){
+    e.preventDefault();
+    const form=e.currentTarget,data=Object.fromEntries(new FormData(form));
+    data.email=data.email.trim();if(signup)data.name=data.name.trim();
+    const firstInvalid=Object.keys(authErrors(data,signup))[0];
+    setValues(v=>({...v,...data}));setTouched({name:true,email:true,password:true});setServerError(null);
+    if(firstInvalid){form.elements.namedItem(firstInvalid).focus();return}
+    setBusy(true);
+    try{if(signup)await api('/auth/signup',{method:'POST',body:data});await login(data.email,data.password)}
+    catch(e){
+      const fields={INVALID_CREDENTIALS:['email','password'],DUPLICATE_EMAIL:['email']}[e.code];
+      if(fields){setServerError({message:e.message,fields});form.elements.namedItem(fields.at(-1)).focus()}else notify(e.message,true);
+    }finally{setBusy(false)}
+  }
   async function demo(){setBusy(true);try{await login('noclick.heejun@moa.local','DemoTeam!2026')}catch(e){notify('체험 계정을 불러오지 못했어요. 새 계정으로 가입하거나 실행 상태를 확인해주세요.',true)}finally{setBusy(false)}}
-  return <div className="auth-page"><div className="auth-story"><Brand/><div><span className="eyebrow">EVERY CONTRIBUTION MATTERS</span><h1>결과물 뒤에 있는<br/>우리의 모든 <em>과정.</em></h1><p>자료를 찾던 시간, 회의에서 꺼낸 아이디어,<br/>서로에게 건넨 피드백까지. 모아에 남겨보세요.</p><div className="story-record"><span className="type-icon RESEARCH"><FolderSearch/></span><div><strong>더 나은 방향을 찾은 자료조사</strong><p>작은 기여도, 분명한 기록으로.</p></div><CheckCircle2 size={20}/></div><div className="story-record second"><span className="type-icon IDEA"><Lightbulb/></span><div><strong>팀의 시작이 된 한 가지 아이디어</strong><p>함께 만든 과정을 기억해요.</p></div><CheckCircle2 size={20}/></div></div><span className="auth-foot">팀의 과정을 모으다, 모아</span></div><div className="auth-panel"><div className="auth-box"><span className="eyebrow">OUR WORK, TOGETHER</span><h2>{signup?'우리의 기록을 시작해요':'다시 만나서 반가워요'}</h2><p>{signup?'이메일로 가입하고 첫 팀을 만들어보세요.':'로그인하고 팀의 이야기를 이어가세요.'}</p><form onSubmit={submit}>{signup&&<label>이름<input name="name" autoComplete="name" required maxLength={30} placeholder="팀원에게 보여줄 이름"/></label>}<label>이메일<input name="email" type="email" required autoComplete="email" maxLength={100} placeholder="name@example.com"/></label><label>비밀번호<input name="password" type="password" required minLength={signup?8:1} maxLength={64} autoComplete={signup?'new-password':'current-password'} placeholder={signup?'8자 이상 입력하세요':'비밀번호를 입력하세요'}/></label><Submit busy={busy}>{signup?'가입하고 시작하기':'로그인'}</Submit></form><div className="auth-switch">{signup?'이미 계정이 있나요?':'아직 모아가 처음인가요?'} <button className="text-button" onClick={()=>setSignup(!signup)}>{signup?'로그인':'회원가입'}</button></div>{import.meta.env.VITE_ENABLE_DEMO !== 'false' && <><div className="divider"><span>먼저 둘러보고 싶다면</span></div><button className="button outline full" disabled={busy} onClick={demo}>체험 팀으로 시작하기 <ArrowRight size={17}/></button><p className="small-note">가상의 팀과 기록으로 실제 기능을 체험해보세요.<br/>직접 남긴 기록과 변경 사항도 저장됩니다.</p></>}</div></div></div>
+  return <div className="auth-page"><div className="auth-story"><Brand/><div><span className="eyebrow">EVERY CONTRIBUTION MATTERS</span><h1>결과물 뒤에 있는<br/>우리의 모든 <em>과정.</em></h1><p>자료를 찾던 시간, 회의에서 꺼낸 아이디어,<br/>서로에게 건넨 피드백까지. 모아에 남겨보세요.</p><div className="story-record"><span className="type-icon RESEARCH"><FolderSearch/></span><div><strong>더 나은 방향을 찾은 자료조사</strong><p>작은 기여도, 분명한 기록으로.</p></div><CheckCircle2 size={20}/></div><div className="story-record second"><span className="type-icon IDEA"><Lightbulb/></span><div><strong>팀의 시작이 된 한 가지 아이디어</strong><p>함께 만든 과정을 기억해요.</p></div><CheckCircle2 size={20}/></div></div><span className="auth-foot">팀의 과정을 모으다, 모아</span></div><div className="auth-panel"><div className="auth-box"><span className="eyebrow">OUR WORK, TOGETHER</span><h2>{signup?'우리의 기록을 시작해요':'다시 만나서 반가워요'}</h2><p>{signup?'이메일로 가입하고 첫 팀을 만들어보세요.':'로그인하고 팀의 이야기를 이어가세요.'}</p><form onSubmit={submit} noValidate>{signup&&<AuthField label="이름" {...field('name')} autoComplete="name" required maxLength={30} placeholder="팀원에게 보여줄 이름"/>}<AuthField label="이메일" {...field('email')} type="email" required autoComplete="email" maxLength={100} placeholder="name@example.com"/><AuthField label="비밀번호" {...field('password')} type="password" required maxLength={64} autoComplete={signup?'new-password':'current-password'} placeholder={signup?'8자 이상 입력하세요':'비밀번호를 입력하세요'}/>{serverError&&<p className="form-error" role="alert">{serverError.message}</p>}<Submit busy={busy}>{signup?'가입하고 시작하기':'로그인'}</Submit></form><div className="auth-switch">{signup?'이미 계정이 있나요?':'아직 모아가 처음인가요?'} <button className="text-button" onClick={switchMode}>{signup?'로그인':'회원가입'}</button></div>{import.meta.env.VITE_ENABLE_DEMO !== 'false' && <><div className="divider"><span>먼저 둘러보고 싶다면</span></div><button className="button outline full" disabled={busy} onClick={demo}>체험 팀으로 시작하기 <ArrowRight size={17}/></button><p className="small-note">가상의 팀과 기록으로 실제 기능을 체험해보세요.<br/>직접 남긴 기록과 변경 사항도 저장됩니다.</p></>}</div></div></div>
 }
 
 function App(){
