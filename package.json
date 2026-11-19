@@ -13,6 +13,7 @@
   "dependencies": {
     "@astryxdesign/core": "^0.7.16",
     "@astryxdesign/theme-neutral": "^0.7.16",
+    "@fontsource/rubik-mono-one": "^5.3.0",
     "@stylexjs/stylex": "^0.19.2",
     "@sun-typeface/suit": "^2.0.5",
     "lucide-react": "^0.468.0",
