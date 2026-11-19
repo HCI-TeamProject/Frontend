@@ -1,0 +1,13 @@
+/* Cascade order for the whole app.
+   reset        Astryx's :where() reset, lowest.
+   legacy       The app's hand-written style.css. Above the reset so existing
+                screens keep their look, below Astryx so its element rules
+                (button, input, h1 ...) cannot restyle Astryx components.
+   astryx-base  Astryx component styles.
+   astryx-theme Theme tokens (imported from astryx-themes.js). */
+@layer reset, legacy, astryx-base, astryx-theme;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
+@import "@astryxdesign/core/reset.css";
+@import "./style.css" layer(legacy);
+@import "@astryxdesign/core/astryx.css";
