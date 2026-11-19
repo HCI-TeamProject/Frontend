@@ -8,6 +8,8 @@
 @layer reset, legacy, astryx-base, astryx-theme;
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
+/* SUIT, the KU theme's typeface (OFL), served from the official npm package. */
+@import "@sun-typeface/suit/fonts/static/woff2/SUIT.css";
 @import "@astryxdesign/core/reset.css";
 @import "./style.css" layer(legacy);
 @import "@astryxdesign/core/astryx.css";

@@ -1,3 +1,8 @@
 node_modules/
 dist/
 .env*
+
+# Astryx theme editor previews (regenerate with: npx astryx experimental theme editor show <theme> --png)
+themes/*/*.png
+themes/*/preview.html
+themes/*/sheet.html

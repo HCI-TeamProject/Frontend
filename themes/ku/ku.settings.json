@@ -1,0 +1,19 @@
+{
+  "name": "ku",
+  "like": "neutral",
+  "mode": "both",
+  "settings": [
+    {
+      "thing": "accent",
+      "value": "#00703c",
+      "source": "dial"
+    },
+    {
+      "thing": "font",
+      "value": "'SUIT', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif",
+      "source": "dial"
+    }
+  ],
+  "lifted": [],
+  "palette": "4497e3f861455236da7bac030310561882811a0a29213bf0cd834076bd8c33bb"
+}
