@@ -14,7 +14,7 @@ export { Timeline } from './screens/Timeline.jsx';
 export { Members } from './screens/Members.jsx';
 export { TeamModal } from './modals/TeamModal.jsx';
 export { RecordEditor } from './modals/RecordEditor.jsx';
-export { RecordDetail } from './modals/RecordDetail.jsx';
+export { RecordDetail } from './screens/RecordDetail.jsx';
 export { App } from './App.jsx';
 
 const rootEl = document.getElementById('root');

@@ -9,7 +9,10 @@ export async function api(path, {method='GET', body, binary=false}={}) {
   if (!response.ok) {
     const data = await response.json().catch(()=>({message:'서버에 연결할 수 없습니다.'}));
     if (response.status===401 && !path.startsWith('/auth/')) { token='';localStorage.removeItem('moa.token');window.dispatchEvent(new Event('moa-expired')); }
-    throw new Error([data.message,...(data.errors||[]).map(e=>`${e.field}: ${e.reason}`)].filter(Boolean).join(' · '));
+    // Status, server code and field errors travel with the error so screens can react to them.
+    const error = new Error([data.message,...(data.errors||[]).map(e=>`${e.field}: ${e.reason}`)].filter(Boolean).join(' · '));
+    error.status = response.status; error.code = data.code; error.errors = data.errors || [];
+    throw error;
   }
   if (response.status===204) return null;
   return binary ? response.blob() : response.json();

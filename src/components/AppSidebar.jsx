@@ -1,79 +1,58 @@
-// App sidebar, after shadcn's sidebar-07 block: team switcher at the top, the
-// main menu, and the signed-in user at the bottom. Collapses to an icon rail.
+// App sidebar. Each part has one job, the way Vercel splits it:
+// - top: who I am (Moa + my name), opening account settings and logout,
+// - menu: which screen I'm on.
+// Which team I'm looking at lives in the header (TeamSwitcher), not here.
+// The sidebar collapses to an icon rail; on phones it is a drawer.
 import React from 'react';
-import { ChevronsUpDown, Plus, LogOut, Check } from 'lucide-react';
+import { ChevronsUpDown, LogOut, UserRoundCog } from 'lucide-react';
 import {
-  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader,
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarHeader,
   SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem, SidebarRail, useSidebar,
 } from '@/components/ui/sidebar';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BrandMark } from './common.jsx';
 
-function TeamSwitcher({ teams, teamId, onSelect, onNewTeam }) {
-  const { isMobile } = useSidebar();
-  const current = teams.find(t => String(t.teamId) === String(teamId));
+function AccountMenu({ user, onOpenSettings, onLogout }) {
+  const { isMobile, state } = useSidebar();
+  // Opens downward from the expanded sidebar; to the side only on the icon rail.
+  const rail = !isMobile && state === 'collapsed';
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
+            <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent" aria-label={`계정 메뉴, ${user?.name || ''}`}>
               <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                 <BrandMark size={18} />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">모아</span>
-                <span className="text-muted-foreground truncate text-xs">{current?.name || '팀을 선택하세요'}</span>
+                <span className="text-muted-foreground truncate text-xs">{user?.name || '불러오는 중'}</span>
               </div>
               <ChevronsUpDown className="ml-auto" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg" align="start"
-            side={isMobile ? 'bottom' : 'right'} sideOffset={4}>
-            <DropdownMenuLabel className="text-muted-foreground text-xs">내 팀</DropdownMenuLabel>
-            {teams.map(t => (
-              <DropdownMenuItem key={t.teamId} onClick={() => onSelect(String(t.teamId))} className="gap-2 p-2">
-                <span className="flex-1 truncate">{t.name}</span>
-                {String(t.teamId) === String(teamId) && <Check className="size-4" />}
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onNewTeam} className="gap-2 p-2">
-              <Plus className="size-4" /> 팀 만들기 · 참여하기
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  );
-}
-
-function NavUser({ user, onLogout }) {
-  const { isMobile } = useSidebar();
-  return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
-              <Avatar className="size-8 rounded-lg"><AvatarFallback className="rounded-lg">{(user?.name || '?').slice(0, 1)}</AvatarFallback></Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user?.name || '불러오는 중'}</span>
-                <span className="text-muted-foreground truncate text-xs">{user?.email}</span>
-              </div>
-              <ChevronsUpDown className="ml-auto size-4" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? 'bottom' : 'right'} align="end" sideOffset={4}>
+            side={rail ? 'right' : 'bottom'} sideOffset={4}>
             <DropdownMenuLabel className="font-normal">
-              <div className="grid text-sm leading-tight"><span className="font-medium">{user?.name}</span><span className="text-muted-foreground text-xs">{user?.email}</span></div>
+              <div className="flex items-center gap-2">
+                <Avatar className="size-8">
+                  {user?.avatarUrl && <AvatarImage src={user.avatarUrl} alt="" className="object-cover" />}
+                  <AvatarFallback>{(user?.name || '?').slice(0, 1)}</AvatarFallback>
+                </Avatar>
+                <div className="grid text-sm leading-tight">
+                  <span className="truncate font-medium">{user?.name}</span>
+                  <span className="text-muted-foreground truncate text-xs">{user?.email}</span>
+                </div>
+              </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onLogout}><LogOut /> 로그아웃</DropdownMenuItem>
+            <DropdownMenuItem onClick={onOpenSettings}><UserRoundCog /> 계정 설정</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onClick={onLogout}><LogOut /> 로그아웃</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
@@ -81,13 +60,13 @@ function NavUser({ user, onLogout }) {
   );
 }
 
-export function AppSidebar({ menu, view, onNavigate, recordCount, teams, teamId, onSelectTeam, onNewTeam, user, onLogout }) {
+export function AppSidebar({ menu, view, onNavigate, reviewCount, user, onLogout }) {
   const { isMobile, setOpenMobile } = useSidebar();
   const go = v => { onNavigate(v); if (isMobile) setOpenMobile(false); };
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <TeamSwitcher teams={teams} teamId={teamId} onSelect={v => { onSelectTeam(v); if (isMobile) setOpenMobile(false); }} onNewTeam={onNewTeam} />
+        <AccountMenu user={user} onOpenSettings={() => go('account')} onLogout={onLogout} />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -98,15 +77,15 @@ export function AppSidebar({ menu, view, onNavigate, recordCount, teams, teamId,
                 <SidebarMenuButton isActive={view === v} tooltip={label} onClick={() => go(v)}>
                   <Icon /> <span>{label}</span>
                 </SidebarMenuButton>
-                {v === 'records' && recordCount > 0 && <SidebarMenuBadge>{recordCount}</SidebarMenuBadge>}
+                {/* Like an unread count: only what still needs someone's attention. */}
+                {v === 'records' && reviewCount > 0 && (
+                  <SidebarMenuBadge aria-label={`확인 필요 ${reviewCount}개`} title={`확인 필요 ${reviewCount}개`}>{reviewCount}</SidebarMenuBadge>
+                )}
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={user} onLogout={onLogout} />
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

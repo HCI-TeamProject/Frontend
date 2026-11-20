@@ -26,7 +26,7 @@ describe('목록 및 상세화면 개선사항 검증 테스트', () => {
       comments: []
     };
 
-    const { container } = render(
+    render(
       <RecordDetail
         detail={mockDetail}
         editable={true}
@@ -35,24 +35,13 @@ describe('목록 및 상세화면 개선사항 검증 테스트', () => {
       />
     );
 
-    // 상단 헤더 카드 확인
-    const headerCard = container.querySelector('.detail-header-card');
-    expect(headerCard).toBeInTheDocument();
-
-    // 1) 작업 종류 확인
-    const typeLabel = headerCard.querySelector('.type-label');
-    expect(typeLabel).toHaveTextContent('디자인');
-
-    // 2) 상세 작업 날짜 뱃지 확인
-    const dateBadge = headerCard.querySelector('.detail-date-badge');
-    expect(dateBadge).toHaveTextContent('2026년 11월 3일');
-
-    // 3) 기록 제목 확인
-    const titleEl = headerCard.querySelector('.detail-title');
-    expect(titleEl).toHaveTextContent('HCI 와이어프레임 설계 및 사용성 검토');
-
-    // 4) 상태 뱃지 확인
-    expect(headerCard).toHaveTextContent('기록됨');
+    // 제목은 페이지의 h1
+    expect(screen.getByRole('heading', { level: 1, name: 'HCI 와이어프레임 설계 및 사용성 검토' })).toBeInTheDocument();
+    // 작업 종류, 상세 작업 날짜, 상태가 제목 위에 보인다
+    const header = screen.getByRole('heading', { level: 1 }).closest('header');
+    expect(header).toHaveTextContent('디자인');
+    expect(header).toHaveTextContent('2026년 11월 3일');
+    expect(header).toHaveTextContent('기록됨');
   });
 });
 
