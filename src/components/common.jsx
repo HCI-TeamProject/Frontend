@@ -4,6 +4,8 @@ import { ArrowUpRight, BookOpen, X, Paperclip, Check, MessageCircle, LoaderCircl
 import { TYPES, STATES, colors, dateLabel } from '../lib/constants.js';
 
 export const Icon = ({type,size=18}) => { const I=TYPES[type]?.[1]||FileText;return <I size={size}/>; };
+// The M-shaped mark on its own, drawn in the current text color.
+export function BrandMark({size=22}){return <svg viewBox="0 0 40 40" width={size} height={size} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M7 28V14l13 10 13-10v14M7 14l13-8 13 8"/></svg>}
 export function Brand(){return <div className="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M7 28V14l13 10 13-10v14M7 14l13-8 13 8"/></svg><strong>모아<span>moa</span></strong></div>}
 export function Avatar({name,index=0,small=false}){return <span className={'avatar '+(small?'small':'')} style={{background:colors[index%colors.length]}}>{(name||'?').slice(0,1)}</span>}
 export function Status({status}){return <span className={'status '+status}><i/>{STATES[status]}</span>}
